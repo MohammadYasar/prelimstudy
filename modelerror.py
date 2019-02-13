@@ -2,7 +2,7 @@ import sys, os, glob, cv2, math
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import euclidean
-from fastdtw import fastdtw
+#from fastdtw import fastdtw
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from mpl_toolkits.mplot3d import Axes3D
@@ -10,8 +10,9 @@ from sklearn import externals
 
 class needlePassing:
     def __init__(self, dataPath):
+        sys.setrecursionlimit(1500)
         self.dataPath = dataPath
-#        self.loadDemonstrations("/kinematics")
+        self.loadDemonstrations("/kinematics")
         self.plotAllInformation()
 
     def loadOffsets(self):
@@ -19,15 +20,19 @@ class needlePassing:
         kinOffset = {}
         kinSpan = {}
         kinOffset['cartesian'] = 0
+                
         kinOffset['rotation'] = 3
         kinOffset['linearVelocity'] = 12
         kinOffset['angularVelocity'] = 15
         kinOffset['grasperAngle'] = 18
+        
         kinSpan['cartesian'] = 3
+        
         kinSpan['rotation'] = 9
         kinSpan['linearVelocity'] = 3
         kinSpan['angularVelocity'] = 3
         kinSpan['grasperAngle'] = 1
+        
         return kinOffset, kinSpan
 
     def loadDemonstrations(self, key):
@@ -247,6 +252,7 @@ class needlePassing:
             self.plotHistogram(intermediary, labelKeys, subplots, segmentPath, "intemediary")
         if len(novices)>0:
             self.plotHistogram(novices, labelKeys, subplots, segmentPath, "novices")
+
     def plotHistogram(self, trajectory, labelKeys, subplots, segmentPath, performance):
         fig = plt.figure()
         manip = "left"
@@ -261,8 +267,9 @@ class needlePassing:
                 for traj in trajectory:
                     for j in range(len(traj)):
                         flattened_array.append(traj[j][i])
-                flattened_array = np.array(flattened_array).reshape(-1,1)
-                n, bins, patches = ax.hist(x=flattened_array, bins='auto', color='#0504aa', alpha=0.7, rwidth=1.1)
+                flattened_array = np.array(flattened_array).reshape(-1,1)   
+                hist, _ = np.histogram(flattened_array, bins=100)
+                n, bins, patches = ax.hist(x=flattened_array, bins=100, color='#0504aa', alpha=0.7, rwidth=1.1)
                 ax.grid(axis='y', alpha=0.75)
                 ax.set_xlabel('Values', fontsize = 8)
                 ax.set_ylabel('Frequency', fontsize = 8)
@@ -273,7 +280,7 @@ class needlePassing:
 #                ax.set_ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
             print ("saved at{}/{}{}.pdf".format(segmentPath, performance,manip))
             plt.savefig("{}/{}{}.pdf".format(segmentPath, performance,manip), dpi = 100)
-    
+            externals.joblib.dump(hist, "{}/{}{}.p".format(segmentPath, performance, manip))
 
         def getConstraints(self, cartesians):
             for i in range (cartesians.shape[0]):

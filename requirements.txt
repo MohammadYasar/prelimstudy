@@ -1,6 +1,5 @@
 asn1crypto==0.24.0
 backports.functools-lru-cache==1.5
-cryptography==2.1.4
 cycler==0.10.0
 enum34==1.1.6
 fastdtw==0.3.2
@@ -13,7 +12,6 @@ matplotlib==2.2.3
 numpy==1.16.1
 opencv-contrib-python==4.0.0.21
 pandas==0.24.1
-pycrypto==2.6.1
 pygobject==3.26.1
 pyparsing==2.3.1
 python-dateutil==2.8.0

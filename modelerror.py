@@ -11,7 +11,7 @@ from sklearn import externals
 class needlePassing:
     def __init__(self, dataPath):
         self.dataPath = dataPath
-        self.loadDemonstrations("/kinematics")
+#        self.loadDemonstrations("/kinematics")
         self.plotAllInformation()
 
     def loadOffsets(self):
@@ -187,12 +187,10 @@ class needlePassing:
     def plotGraphAll(self,constraints = None, novices=None, intermediary=None, experts= None, segment = None, datatype = None, subplots = None):
         fig = plt.figure()
         subplotnum1 =int("{}1".format(subplots))
-        print "plotting for {} with span {}".format(datatype, subplots)
         fig.set_size_inches(30,20)
         imagePath = self.dataPath + "/figures/" + datatype
         segmentPath = imagePath + "/%s/"%segment
         labelKeys = self.getLabels(datatype)
-        print (len(experts))        
         if not os.path.exists(segmentPath):
             os.makedirs(segmentPath)
     
@@ -203,13 +201,14 @@ class needlePassing:
             ax.set_xlabel('Time', fontsize = 20)
             ax.set_ylabel(labelKeys[i], fontsize = 20)
             if not novices == []:
+                count = 0
                 for novice in novices:
                     ax.plot(novice[:,i], color = "red") 
-                    pass
+                    count+=1
             if not intermediary == []:
                 for interm in intermediary:
                     ax.plot(interm[:,i], color = "blue")        
-                    pass
+                    
             if len(experts)> 0:
                 x_max = []     
                 x_min = []       
@@ -230,20 +229,18 @@ class needlePassing:
         green_patch = mpatches.Patch(color = 'green', label = 'expert')
         black_patch = mpatches.Patch(color = 'black', label = 'constraints')
         plt.legend(handles= [red_patch, blue_patch, green_patch, black_patch], fontsize=20)
-        plt.savefig("{}/expertAllPlots.pdf".format(segmentPath), dpi = 100)
+        plt.savefig("{}/AllPlots.pdf".format(segmentPath), dpi = 100)
         plt.close()
 
     def plotDistribution(self,constraints = None, novices=None, intermediary=None, experts= None, segment = None, datatype = None, subplots = None):
         
-        fig = plt.figure()
-        fig.set_size_inches(30,20)
         imagePath = self.dataPath + "/figures/histogram/" + datatype
         segmentPath = imagePath + "/%s/"%segment
         labelKeys = self.getLabels(datatype)
                 
         if not os.path.exists(segmentPath):
             os.makedirs(segmentPath)
-        
+        print ("entered plotDistribution") 
         if len(experts)>0:
             self.plotHistogram(experts, labelKeys, subplots, segmentPath, "experts") 
         if len(intermediary)>0:
@@ -253,32 +250,34 @@ class needlePassing:
     def plotHistogram(self, trajectory, labelKeys, subplots, segmentPath, performance):
         fig = plt.figure()
         manip = "left"
-        subplotnum1 =int("{}1".format(subplots*2))
-        for i in range(subplots*2):
-            plotNum = int("{}{}".format(subplotnum1, i+1))
-            ax = fig.add_subplot(plotNum)
-            if i>=subplots:
+        subplotnum1 =int("{}1".format(subplots))
+        for k in range(2):
+            if k>0:
                 manip = "right"
-            flattened_array = []      
-            for traj in trajectory:
-                for j in range(len(traj)):
-                    flattened_array.append(traj[j][i])
-            flattened_array = np.array(flattened_array).reshape(-1,1)
-            n, bins, patches = ax.hist(x=flattened_array, bins='auto', color='#0504aa', alpha=0.7, rwidth=1.1)
-            ax.grid(axis='y', alpha=0.75)
-            ax.set_xlabel('Values', fontsize = 5)
-            ax.set_ylabel('Frequency', fontsize = 5)
-            ax.set_title('Distribution for {}'.format(labelKeys[i%subplots]), fontsize  =5)
-            ax.text(23, 45, r'$\mu=15, b=3$')
-            maxfreq = n.max()
-            # Set a clean upper y-axis limit.
-            ax.set_ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
-        plt.savefig("{}/{}{}{}.pdf".format(segmentPath, performance,manip, dpi = 100))
-        plt.close()
+            for i in range(0+k*subplots,(k+1)*subplots):
+                plotNum = int("{}{}".format(subplotnum1, (i%subplots+1)))
+                ax = fig.add_subplot(plotNum)
+                flattened_array = []      
+                for traj in trajectory:
+                    for j in range(len(traj)):
+                        flattened_array.append(traj[j][i])
+                flattened_array = np.array(flattened_array).reshape(-1,1)
+                n, bins, patches = ax.hist(x=flattened_array, bins='auto', color='#0504aa', alpha=0.7, rwidth=1.1)
+                ax.grid(axis='y', alpha=0.75)
+                ax.set_xlabel('Values', fontsize = 8)
+                ax.set_ylabel('Frequency', fontsize = 8)
+                ax.set_title('Distribution for {}'.format(labelKeys[i%subplots]), fontsize  =8)
+                ax.text(23, 45, r'$\mu=15, b=3$')
+                maxfreq = n.max()
+                # Set a clean upper y-axis limit.
+#                ax.set_ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
+            print ("saved at{}/{}{}.pdf".format(segmentPath, performance,manip))
+            plt.savefig("{}/{}{}.pdf".format(segmentPath, performance,manip), dpi = 100)
+    
 
-    def getConstraints(self, cartesians):
-        for i in range (cartesians.shape[0]):
-           pass 
+        def getConstraints(self, cartesians):
+            for i in range (cartesians.shape[0]):
+               pass 
     def makeSegments(self, cartesians, transcript, segmentPath):
         """
         This function segments the trajectory based on the boundaries obtained from the transcript file
@@ -352,7 +351,7 @@ class needlePassing:
                 else:
                     novice_segments.append(kin)
                     novice_scores.append(scores[name][0][2])
-#            print("checking Score {}".format(novice_scores))
+            print("checking length {}".format(len(novice_segments)+ len(expert_segments)+len(intermediary_segments)))
             self.plotDistribution(constraints = constraintDict[seg], novices = np.array(novice_segments), intermediary = np.array(intermediary_segments), experts = np.array(expert_segments), segment=minseg.split("/")[len(minseg.split("/"))-1],datatype = key, subplots = span)            
             """
             self.compareTrajectories(expert_segments, novice_segments, expert_scores, novice_scores)

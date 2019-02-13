@@ -233,6 +233,49 @@ class needlePassing:
         plt.savefig("{}/expertAllPlots.pdf".format(segmentPath), dpi = 100)
         plt.close()
 
+    def plotDistribution(self,constraints = None, novices=None, intermediary=None, experts= None, segment = None, datatype = None, subplots = None):
+        
+        fig = plt.figure()
+        fig.set_size_inches(30,20)
+        imagePath = self.dataPath + "/figures/histogram/" + datatype
+        segmentPath = imagePath + "/%s/"%segment
+        labelKeys = self.getLabels(datatype)
+                
+        if not os.path.exists(segmentPath):
+            os.makedirs(segmentPath)
+        
+        if len(experts)>0:
+            self.plotHistogram(experts, labelKeys, subplots, segmentPath, "experts") 
+        if len(intermediary)>0:
+            self.plotHistogram(intermediary, labelKeys, subplots, segmentPath, "intemediary")
+        if len(novices)>0:
+            self.plotHistogram(novices, labelKeys, subplots, segmentPath, "novices")
+    def plotHistogram(self, trajectory, labelKeys, subplots, segmentPath, performance):
+        fig = plt.figure()
+        manip = "left"
+        subplotnum1 =int("{}1".format(subplots*2))
+        for i in range(subplots*2):
+            plotNum = int("{}{}".format(subplotnum1, i+1))
+            ax = fig.add_subplot(plotNum)
+            if i>=subplots:
+                manip = "right"
+            flattened_array = []      
+            for traj in trajectory:
+                for j in range(len(traj)):
+                    flattened_array.append(traj[j][i])
+            flattened_array = np.array(flattened_array).reshape(-1,1)
+            n, bins, patches = ax.hist(x=flattened_array, bins='auto', color='#0504aa', alpha=0.7, rwidth=1.1)
+            ax.grid(axis='y', alpha=0.75)
+            ax.set_xlabel('Values', fontsize = 5)
+            ax.set_ylabel('Frequency', fontsize = 5)
+            ax.set_title('Distribution for {}'.format(labelKeys[i%subplots]), fontsize  =5)
+            ax.text(23, 45, r'$\mu=15, b=3$')
+            maxfreq = n.max()
+            # Set a clean upper y-axis limit.
+            ax.set_ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
+        plt.savefig("{}/{}{}{}.pdf".format(segmentPath, performance,manip, dpi = 100))
+        plt.close()
+
     def getConstraints(self, cartesians):
         for i in range (cartesians.shape[0]):
            pass 
@@ -309,7 +352,7 @@ class needlePassing:
                     novice_segments.append(kin)
                     novice_scores.append(scores[name][0][2])
 #            print("checking Score {}".format(novice_scores))
-            self.plotGraphAll(constraints = constraintDict[seg], novices = np.array(novice_segments), intermediary = np.array(intermediary_segments), experts = np.array(expert_segments), segment=minseg.split("/")[len(minseg.split("/"))-1],datatype = key, subplots = span)            
+            self.plotDistribution(constraints = constraintDict[seg], novices = np.array(novice_segments), intermediary = np.array(intermediary_segments), experts = np.array(expert_segments), segment=minseg.split("/")[len(minseg.split("/"))-1],datatype = key, subplots = span)            
             """
             self.compareTrajectories(expert_segments, novice_segments, expert_scores, novice_scores)
             self.plotGraph(novice_segments, novice_scores, minseg.split("/")[len(minseg.split("/"))-1], "novice")                

@@ -11,7 +11,7 @@ from sklearn import externals
 class needlePassing:
     def __init__(self, dataPath):
         self.dataPath = dataPath
-#        self.loadDemonstrations("/kinematics")
+        self.loadDemonstrations("/kinematics")
         self.plotAllInformation()
 
     def loadOffsets(self):
@@ -286,6 +286,7 @@ class needlePassing:
         """
         kinDict = {}        
         constraintDict = {}
+        print (scores)
         for seg in uniqueSegments:
             kinDict[seg] = []
             novice_segments = []

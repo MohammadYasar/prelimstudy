@@ -48,12 +48,12 @@ class needlePassing:
         for name in glob.glob(globPath):
             if key == "/kinematics":
                 for key1, value in kinOffset.iteritems() :
-                    print ("reading for {} with offset {} and span {}".format(key1, kinOffset[key1], kinSpan[key1]))
+#                    print ("reading for {} with offset {} and span {}".format(key1, kinOffset[key1], kinSpan[key1]))
                     cartesians = self.readCartesians(name, kinOffset[key1], kinSpan[key1])                
                     transcriptFile = name.replace(key, "/transcriptions").replace("AllGestures", "")
                     transcript = self.readTranscripts(transcriptFile)                
                     segmentPath = (transcriptFile.replace("/transcriptions", "/segments").replace(".txt","/")) + str(key1)
-                    print ("segmentPath %s"%segmentPath)
+#                    print ("segmentPath %s"%segmentPath)
                     if not transcript == []:
                         if not os.path.exists(segmentPath):
                             os.makedirs(segmentPath)
@@ -286,7 +286,7 @@ class needlePassing:
         """
         kinDict = {}        
         constraintDict = {}
-        print (scores)
+#        print (scores)
         for seg in uniqueSegments:
             kinDict[seg] = []
             novice_segments = []

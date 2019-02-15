@@ -237,17 +237,17 @@ class needlePassing:
         segmentPath = imagePath + "/%s/"%segment
         labelKeys = self.getLabels(datatype)
         fig = plt.figure()
-                
+        plt.style.use('dark_background') 
         if not os.path.exists(segmentPath):
             os.makedirs(segmentPath)
         print ("entered plotDistribution") 
         if len(novices)>0:
-            self.plotHistogram(novices, labelKeys, subplots, segmentPath, "novices", fig, "b")
+            self.plotHistogram(novices, labelKeys, subplots, segmentPath, "novices", fig, "white")
         if len(intermediary)>0:
-            self.plotHistogram(intermediary, labelKeys, subplots, segmentPath, "intemediary", fig, "g")
+            self.plotHistogram(intermediary, labelKeys, subplots, segmentPath, "intemediary", fig, "lightpink")
         if len(experts)>0:
-            self.plotHistogram(experts, labelKeys, subplots, segmentPath, "experts", fig, "r") 
-
+            self.plotHistogram(experts, labelKeys, subplots, segmentPath, "experts", fig, "darkred") 
+        plt.close()
     def plotHistogram(self, trajectory, labelKeys, subplots, segmentPath, performance, fig, _color):
         manip = "left"
         subplotnum1 =int("{}1".format(subplots))
@@ -268,14 +268,10 @@ class needlePassing:
                 ax.set_ylabel('Frequency', fontsize = 8)
                 ax.set_title('Distribution for {}'.format(labelKeys[i%subplots]), fontsize  =8)
                 ax.text(23, 45, r'$\mu=15, b=3$')
-#                ax.set_xlim(-2,2)
                 maxfreq = n.max()
-                # Set a clean upper y-axis limit.
-#                ax.set_ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
-#            print ("saved at{}/{}{}.pdf".format(segmentPath, performance,manip))
-            red_patch = mpatches.Patch(color = 'red', label = 'expert')
-            blue_patch = mpatches.Patch(color = 'blue', label = 'novice')
-            green_patch = mpatches.Patch(color = 'green', label = 'intermediary')
+            red_patch = mpatches.Patch(color = 'darkred', label = 'expert')
+            blue_patch = mpatches.Patch(color = 'white', label = 'novice')
+            green_patch = mpatches.Patch(color = 'lightpink', label = 'intermediary')
             plt.legend(handles= [red_patch, blue_patch, green_patch])
             plt.savefig("{}/{}.pdf".format(segmentPath, manip), dpi = 100)
     

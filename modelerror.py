@@ -272,7 +272,7 @@ class needlePassing:
                 maxfreq = n.max()
                 # Set a clean upper y-axis limit.
 #                ax.set_ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
-            print ("saved at{}/{}{}.pdf".format(segmentPath, performance,manip))
+#            print ("saved at{}/{}{}.pdf".format(segmentPath, performance,manip))
             red_patch = mpatches.Patch(color = 'red', label = 'expert')
             blue_patch = mpatches.Patch(color = 'blue', label = 'novice')
             green_patch = mpatches.Patch(color = 'green', label = 'intermediary')
@@ -356,7 +356,7 @@ class needlePassing:
                 else:
                     novice_segments.append(kin)
                     novice_scores.append(scores[name][0][2])
-            print("checking length {}".format(len(novice_segments)+ len(expert_segments)+len(intermediary_segments)))
+#            print("checking length {}".format(len(novice_segments)+ len(expert_segments)+len(intermediary_segments)))
             self.plotDistribution(constraints = constraintDict[seg], novices = np.array(novice_segments), intermediary = np.array(intermediary_segments), experts = np.array(expert_segments), segment=minseg.split("/")[len(minseg.split("/"))-1],datatype = key, subplots = span)            
             """
             self.compareTrajectories(expert_segments, novice_segments, expert_scores, novice_scores)

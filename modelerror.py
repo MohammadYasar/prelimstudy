@@ -232,23 +232,23 @@ class needlePassing:
         plt.savefig("{}/AllPlots.pdf".format(segmentPath), dpi = 100)
         plt.close()
 
-    def plotDistribution(self,constraints = None, novices=None, intermediary=None, experts= None, segment = None, datatype = None, subplots = None):
-        
+    def plotDistribution(self,constraints = None, novices=None, intermediary=None, experts= None, segment = None, datatype = None, subplots = None):        
         imagePath = self.dataPath + "/figures/histogram/" + datatype
         segmentPath = imagePath + "/%s/"%segment
         labelKeys = self.getLabels(datatype)
+        fig = plt.figure()
                 
         if not os.path.exists(segmentPath):
             os.makedirs(segmentPath)
         print ("entered plotDistribution") 
-        if len(experts)>0:
-            self.plotHistogram(experts, labelKeys, subplots, segmentPath, "experts") 
-        if len(intermediary)>0:
-            self.plotHistogram(intermediary, labelKeys, subplots, segmentPath, "intemediary")
         if len(novices)>0:
-            self.plotHistogram(novices, labelKeys, subplots, segmentPath, "novices")
-    def plotHistogram(self, trajectory, labelKeys, subplots, segmentPath, performance):
-        fig = plt.figure()
+            self.plotHistogram(novices, labelKeys, subplots, segmentPath, "novices", fig, "b")
+        if len(intermediary)>0:
+            self.plotHistogram(intermediary, labelKeys, subplots, segmentPath, "intemediary", fig, "g")
+        if len(experts)>0:
+            self.plotHistogram(experts, labelKeys, subplots, segmentPath, "experts", fig, "r") 
+
+    def plotHistogram(self, trajectory, labelKeys, subplots, segmentPath, performance, fig, _color):
         manip = "left"
         subplotnum1 =int("{}1".format(subplots))
         for k in range(2):
@@ -262,17 +262,22 @@ class needlePassing:
                     for j in range(len(traj)):
                         flattened_array.append(traj[j][i])
                 flattened_array = np.array(flattened_array).reshape(-1,1)
-                n, bins, patches = ax.hist(x=flattened_array, bins='auto', color='#0504aa', alpha=0.7, rwidth=1.1)
+                n, bins, patches = ax.hist(x=flattened_array, bins=100, color=_color, alpha=0.7, rwidth=1.1)
                 ax.grid(axis='y', alpha=0.75)
                 ax.set_xlabel('Values', fontsize = 8)
                 ax.set_ylabel('Frequency', fontsize = 8)
                 ax.set_title('Distribution for {}'.format(labelKeys[i%subplots]), fontsize  =8)
                 ax.text(23, 45, r'$\mu=15, b=3$')
+#                ax.set_xlim(-2,2)
                 maxfreq = n.max()
                 # Set a clean upper y-axis limit.
 #                ax.set_ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
             print ("saved at{}/{}{}.pdf".format(segmentPath, performance,manip))
-            plt.savefig("{}/{}{}.pdf".format(segmentPath, performance,manip), dpi = 100)
+            red_patch = mpatches.Patch(color = 'red', label = 'expert')
+            blue_patch = mpatches.Patch(color = 'blue', label = 'novice')
+            green_patch = mpatches.Patch(color = 'green', label = 'intermediary')
+            plt.legend(handles= [red_patch, blue_patch, green_patch])
+            plt.savefig("{}/{}.pdf".format(segmentPath, manip), dpi = 100)
     
 
         def getConstraints(self, cartesians):

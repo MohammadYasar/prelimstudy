@@ -257,17 +257,17 @@ class needlePassing:
             for i in range(0+k*subplots,(k+1)*subplots):
                 plotNum = int("{}{}".format(subplotnum1, (i%subplots+1)))
                 ax = fig.add_subplot(plotNum)
-                flattened_array = []      
+                flattened_array = []   
                 for traj in trajectory:
                     for j in range(len(traj)):
                         flattened_array.append(traj[j][i])
                 flattened_array = np.array(flattened_array).reshape(-1,1)
-                n, bins, patches = ax.hist(x=flattened_array, bins=100, color=_color, alpha=0.7, rwidth=1.1)
+                n, bins, patches = ax.hist(x=flattened_array, bins=100, color=_color, alpha=0.7, rwidth=1.1, density = True, stacked = True)
+                n = (n/len(trajectory))
                 ax.grid(axis='y', alpha=0.75)
                 ax.set_xlabel('Values', fontsize = 8)
                 ax.set_ylabel('Frequency', fontsize = 8)
                 ax.set_title('Distribution for {}'.format(labelKeys[i%subplots]), fontsize  =8)
-                ax.text(23, 45, r'$\mu=15, b=3$')
                 maxfreq = n.max()
             red_patch = mpatches.Patch(color = 'darkred', label = 'expert')
             blue_patch = mpatches.Patch(color = 'white', label = 'novice')

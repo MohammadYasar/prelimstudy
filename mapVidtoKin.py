@@ -4,11 +4,11 @@ import pandas as pd
 from sklearn import externals
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+
 class mapVids:
-    def __init__(self, _dir, subject):
+    def __init__(self, _dir):
         self._dir =_dir
-        self.subject = subject
-        self.compareSub(subject)
+        
 #    def load
     def compareSub(self, subject):    
         kinematicsPath = self._dir + "/segments/" + subject + "/*"
@@ -31,15 +31,15 @@ class mapVids:
                     _list.append([gestureName, self.plotHistogram(_expertDemonstration, gesture, labelKeys, gesture.shape[1]/2, comparePath1, "experts", "red")])
             print (sorted(_list, key = self.sortSecond)) 
             df = pd.DataFrame(data  = (sorted(_list, key = self.sortSecond)), columns = ["gestures", "intersection"])
-            df.to_csv("{}/{}.csv".format(comparePath, kin))
+            df.to_csv("{}/{}{}.csv".format(comparePath,subject, kin))
 
     def plotHistogram(self, trajectory, subject, labelKeys, subplots, segmentPath, performance, _color):
         manip = "left"
-        fig = plt.figure()
         plt.style.use('dark_background')
         subplotnum1 =int("{}1".format(subplots))
         intersections = []
         for k in range(2):
+            fig = plt.figure()
             if k>0:
                 manip = "right"
             for i in range(0+k*subplots,(k+1)*subplots):
@@ -90,11 +90,19 @@ class mapVids:
     
     def findMean(self,_list):
         _array = np.array(_list)
-        _mean = np.zeros(len(_list))
 #        for i in range(_mean.shape[0]):
-        _mean = np.mean(_array, axis=1)
-        return _mean
+        _mean = np.mean(_array[:,int(_array.shape[1]/2):_array.shape[1]], axis=1)
+        return _mean[0]
+
     def sortSecond(self,val): 
         return val[1]  
+    
+    def loopSubjects(self):
+        subjects = self._dir + "/transcriptions/*"
+        for name in glob.glob(subjects):
+            print (name) 
+            subject = name.split("/")[len(name.split("/"))-1].replace(".txt","")
+            self.compareSub(subject)
 _dir = os.path.abspath(os.path.dirname(sys.argv[0]))    
-mpvds = mapVids(_dir, "Needle_Passing_C003")
+mpvds = mapVids(_dir)
+mpvds.loopSubjects()

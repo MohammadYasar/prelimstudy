@@ -11,7 +11,7 @@ from sklearn import externals
 class needlePassing:
     def __init__(self, dataPath):
         self.dataPath = dataPath
-        self.loadDemonstrations("/kinematics")
+#        self.loadDemonstrations("/kinematics")
         self.plotAllInformation()
 
     def loadOffsets(self):
@@ -245,40 +245,54 @@ class needlePassing:
             self.plotHistogram(novices, labelKeys, subplots, segmentPath, "novices", fig, "white")
         if len(intermediary)>0:
             self.plotHistogram(intermediary, labelKeys, subplots, segmentPath, "intemediary", fig, "lightpink")
-        if len(experts)>0:
+        if len(experts)>0:            
             self.plotHistogram(experts, labelKeys, subplots, segmentPath, "experts", fig, "darkred") 
         plt.close()
+
     def plotHistogram(self, trajectory, labelKeys, subplots, segmentPath, performance, fig, _color):
         manip = "left"
         subplotnum1 =int("{}1".format(subplots))
+        externals.joblib.dump(trajectory, "{}/{}.p".format(segmentPath, performance))
         for k in range(2):
             if k>0:
                 manip = "right"
             for i in range(0+k*subplots,(k+1)*subplots):
                 plotNum = int("{}{}".format(subplotnum1, (i%subplots+1)))
                 ax = fig.add_subplot(plotNum)
-                flattened_array = []   
+                flattened_array = []      
                 for traj in trajectory:
                     for j in range(len(traj)):
                         flattened_array.append(traj[j][i])
                 flattened_array = np.array(flattened_array).reshape(-1,1)
-                n, bins, patches = ax.hist(x=flattened_array, bins=100, color=_color, alpha=0.7, rwidth=1.1, density = True, stacked = True)
-                n = (n/len(trajectory))
+                n, bins, patches = ax.hist(x=flattened_array, bins=100, color=_color, alpha=0.7, rwidth=1.1, density = True)
                 ax.grid(axis='y', alpha=0.75)
                 ax.set_xlabel('Values', fontsize = 8)
                 ax.set_ylabel('Frequency', fontsize = 8)
                 ax.set_title('Distribution for {}'.format(labelKeys[i%subplots]), fontsize  =8)
+                ax.text(23, 45, r'$\mu=15, b=3$')
                 maxfreq = n.max()
             red_patch = mpatches.Patch(color = 'darkred', label = 'expert')
+            plt.savefig("{}/{}.pdf".format(segmentPath, manip), dpi = 100)
             blue_patch = mpatches.Patch(color = 'white', label = 'novice')
             green_patch = mpatches.Patch(color = 'lightpink', label = 'intermediary')
             plt.legend(handles= [red_patch, blue_patch, green_patch])
             plt.savefig("{}/{}.pdf".format(segmentPath, manip), dpi = 100)
-    
+                                  
 
-        def getConstraints(self, cartesians):
-            for i in range (cartesians.shape[0]):
-               pass 
+    def reshapeArray(self, experts, subplots):
+        length = 0
+        for expert in experts:
+            length += len(expert)
+        expert_array = np.zeros((length,2*subplots))
+        count = 0
+        for i in range(expert_array.shape[0]):
+            for expert in experts:
+                expert_array[count:count+ len(expert)] = expert
+        return expert_array
+
+    def getConstraints(self, cartesians):
+        for i in range (cartesians.shape[0]):
+           pass 
     def makeSegments(self, cartesians, transcript, segmentPath):
         """
         This function segments the trajectory based on the boundaries obtained from the transcript file

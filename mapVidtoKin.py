@@ -59,9 +59,63 @@ class mapVids:
             blue_patch = mpatches.Patch(color = 'white', label = 'novice')
             plt.legend(handles= [red_patch, blue_patch])
             plt.savefig("{}/{}.pdf".format(segmentPath, manip), dpi = 100, bbox = 'tight')                                  
-        plt.close()
+            plt.close()
         _meanIntersection = self.findMean(np.array(intersections).reshape(-1,subplots*2))
         return _meanIntersection
+
+    def compareplots(self, experts, subject):    
+        expertkinematicsPath = self._dir + "/segments/" + experts[0] + "/*"
+        subjectkinematicsPath = self._dir + "/segments/" + subject 
+        histogramPath = self._dir + "/figures/histogram/"
+        comparePath = self._dir + "/figures/comparision/" + subject
+        for name in glob.glob(expertkinematicsPath):
+            kin =  (name.split("/")[len(name.split("/"))-1])
+            _list = []
+            for num in glob.glob(name+ "/*"):                
+                gestureName =  (num.split("/")[len(num.split("/"))-1].replace(".p",""))
+                expertGesturePath =  num
+                _expertDemonstrations = []
+                _expertDemonstrations.append(externals.joblib.load(expertGesturePath)) 
+                for i in range(1, len(experts)):
+                    expertGesturePath1 = expertGesturePath.replace(experts[0],experts[i])
+                    if os.path.exists(expertGesturePath1):
+                        _expertDemonstrations.append(externals.joblib.load(expertGesturePath1))
+                subjectGesturePath = expertGesturePath.replace(experts[0], subject)
+                if os.path.exists(subjectGesturePath):
+                    _subjectDemonstration = externals.joblib.load(subjectGesturePath)
+                    labelKeys = self.getLabels(kin)
+                    comparePath1 = comparePath + "/{}/{}".format(kin,gestureName)
+                    if not os.path.exists(comparePath1):
+                        print ("loading expert trajectories") 
+                        os.makedirs(comparePath1)
+                    _list.append([self.plotTrajectory(_expertDemonstrations, _subjectDemonstration, labelKeys, _subjectDemonstration.shape[1]/2, comparePath1, "experts", "red")])                
+
+    def plotTrajectory(self, experts, subject, labelKeys, subplots, segmentPath, performance, _color):
+        manip = "left"
+
+        print ("loading expert trajectories") 
+        subplotnum1 = int("{}1".format(subplots))
+        for k in range(2):
+            fig = plt.figure()
+            if k>0:
+                manip = "right"
+            for i in range(0+k*subplots, (k+1)*subplots):
+                plotNum = int("{}{}".format(subplotnum1, (i%subplots+1)))
+                ax = fig.add_subplot(plotNum)
+                ax.grid(axis='y', alpha=0.75)
+                ax.set_xlabel('Time', fontsize = 8)
+                ax.set_ylabel('Value of {}'.format(labelKeys[i%subplots]), fontsize = 8)
+#                ax.set_title('Distribution for {} for {}'.format(labelKeys[i%subplots], manip), fontsize  =5)
+                ax.text(23, 45, r'$\mu=15, b=3$')
+                for trajectory in experts:
+                    ax.plot(trajectory[:,i], color = 'red')
+                ax.plot(subject[:,i], color = 'green')
+            red_patch = mpatches.Patch(color = 'red', label = 'expert')
+            blue_patch = mpatches.Patch(color = 'green', label = 'novice')
+            plt.legend(handles= [red_patch, blue_patch])
+            plt.savefig("{}/kin{}.pdf".format(segmentPath, manip), dpi = 100, bbox = 'tight')                                 
+        plt.close() 
+        return
 
     def flattenArray(self, trajectory, col):
         row = 0
@@ -105,4 +159,9 @@ class mapVids:
             self.compareSub(subject)
 _dir = os.path.abspath(os.path.dirname(sys.argv[0]))    
 mpvds = mapVids(_dir)
-mpvds.loopSubjects()
+#mpvds.loopSubjects()
+experts = ['Needle_Passing_F001', 'Needle_Passing_F004', 'Needle_Passing_H005', 'Needle_Passing_I005', 'Needle_Passing_H004']
+subjects = ['Needle_Passing_B001', 'Needle_Passing_B002', 'Needle_Passing_B003', 'Needle_Passing_B004', 'Needle_Passing_C001','Needle_Passing_C002', 'Needle_Passing_C003', 'Needle_Passing_C004', 'Needle_Passing_C005', 'Needle_Passing_D001','Needle_Passing_D002', 'Needle_Passing_D003', 'Needle_Passing_D004', 'Needle_Passing_D005', 'Needle_Passing_E001','Needle_Passing_E003', 'Needle_Passing_E004', 'Needle_Passing_E005', 'Needle_Passing_F001', 'Needle_Passing_F003','Needle_Passing_F004', 'Needle_Passing_H002', 'Needle_Passing_H004', 'Needle_Passing_H005', 'Needle_Passing_I002', 'Needle_Passing_I003','Needle_Passing_I004', 'Needle_Passing_I005' ]
+
+for subject in subjects:
+    mpvds.compareplots(experts, subject)    

@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn import externals
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-
+from fastdtw import fastdtw
 class mapVids:
     def __init__(self, _dir):
         self._dir =_dir
@@ -63,6 +63,32 @@ class mapVids:
         _meanIntersection = self.findMean(np.array(intersections).reshape(-1,subplots*2))
         return _meanIntersection
 
+    def dtwTrajectories(self, experts, subject):
+        print ("subject: {}".format(subject))
+        expertkinematicsPath = self._dir + "/segments/" + experts[0] + "/*"
+        subjectkinematicsPath = self._dir + "/segments/" + subject 
+        comparePath = self._dir + "/figures/comparision/" + subject
+        for name in glob.glob(expertkinematicsPath):
+            kin =  (name.split("/")[len(name.split("/"))-1])
+            _list = []
+            for num in glob.glob(name+ "/*"):                
+                gestureName =  (num.split("/")[len(num.split("/"))-1].replace(".p",""))
+                expertGesturePath =  num
+                _expertDemonstrations = []
+                _expertDemonstrations.append(externals.joblib.load(expertGesturePath)) 
+                for i in range(1, len(experts)):
+                    expertGesturePath1 = expertGesturePath.replace(experts[0],experts[i])
+                    if os.path.exists(expertGesturePath1):
+                        _expertDemonstrations.append(externals.joblib.load(expertGesturePath1))
+                subjectGesturePath = expertGesturePath.replace(experts[0], subject)
+                if os.path.exists(subjectGesturePath):
+                    _subjectDemonstration = externals.joblib.load(subjectGesturePath)
+                    labelKeys = self.getLabels(kin)
+                    _list.append([ gestureName, self.compareTrajectories(_expertDemonstrations, _subjectDemonstration)])                
+            #print (sorted(_list, key = self.sortSecond)) 
+            df = pd.DataFrame(data  = (sorted(_list, key = self.sortSecond)), columns = ["gestures", "intersection"])
+            df.to_csv("{}/{}{}dtw.csv".format(comparePath,subject, kin))
+
     def compareplots(self, experts, subject):    
         expertkinematicsPath = self._dir + "/segments/" + experts[0] + "/*"
         subjectkinematicsPath = self._dir + "/segments/" + subject 
@@ -88,7 +114,7 @@ class mapVids:
                     if not os.path.exists(comparePath1):
                         print ("loading expert trajectories") 
                         os.makedirs(comparePath1)
-                    _list.append([self.plotTrajectory(_expertDemonstrations, _subjectDemonstration, labelKeys, _subjectDemonstration.shape[1]/2, comparePath1, "experts", "red")])                
+                    _list.append([self.compareTrajectories(_expertDemonstrations, _subjectDemonstration), labelKeys])                
 
     def plotTrajectory(self, experts, subject, labelKeys, subplots, segmentPath, performance, _color):
         manip = "left"
@@ -157,6 +183,19 @@ class mapVids:
             print (name) 
             subject = name.split("/")[len(name.split("/"))-1].replace(".txt","")
             self.compareSub(subject)
+
+    def compareTrajectories(self, expertsTraj, subjectTraj):
+        """ 
+        This function compares the trajectories based on the fast dtw
+        """
+        #print (len(expertdemonstrations))
+        dev = []
+        for expertTraj in expertsTraj:
+            distance, path = fastdtw(expertTraj, subjectTraj)
+            dev.append(distance)
+        #print dev
+        return sum(dev)/float(len(dev))
+
 _dir = os.path.abspath(os.path.dirname(sys.argv[0]))    
 mpvds = mapVids(_dir)
 #mpvds.loopSubjects()
@@ -164,4 +203,4 @@ experts = ['Needle_Passing_F001', 'Needle_Passing_F004', 'Needle_Passing_H005', 
 subjects = ['Needle_Passing_B001', 'Needle_Passing_B002', 'Needle_Passing_B003', 'Needle_Passing_B004', 'Needle_Passing_C001','Needle_Passing_C002', 'Needle_Passing_C003', 'Needle_Passing_C004', 'Needle_Passing_C005', 'Needle_Passing_D001','Needle_Passing_D002', 'Needle_Passing_D003', 'Needle_Passing_D004', 'Needle_Passing_D005', 'Needle_Passing_E001','Needle_Passing_E003', 'Needle_Passing_E004', 'Needle_Passing_E005', 'Needle_Passing_F001', 'Needle_Passing_F003','Needle_Passing_F004', 'Needle_Passing_H002', 'Needle_Passing_H004', 'Needle_Passing_H005', 'Needle_Passing_I002', 'Needle_Passing_I003','Needle_Passing_I004', 'Needle_Passing_I005' ]
 
 for subject in subjects:
-    mpvds.compareplots(experts, subject)    
+    mpvds.dtwTrajectories(experts, subject)    

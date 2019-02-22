@@ -24,16 +24,16 @@ class mapVids:
                 if os.path.exists(_expertPath):
                     _expertDemonstration = externals.joblib.load(_expertPath) 
                     labelKeys = self.getLabels(kin)
-                    _expertDemonstration = self.flattenArray(_expertDemonstration, gesture.shape[1])
+#                    _expertDemonstration = self.flattenArray(_expertDemonstration, gesture.shape[1])
                     comparePath1 = comparePath + "/{}/{}".format(kin,gestureName)
                     if not os.path.exists(comparePath1):
                         os.makedirs(comparePath1)
-                    _list.append([gestureName, self.plotHistogram(_expertDemonstration, gesture, labelKeys, gesture.shape[1]/2, comparePath1, "experts", "red")])
-            print (sorted(_list, key = self.sortSecond)) 
+#                    _list.append([gestureName, self.plotHistogram(_expertDemonstration, gesture, labelKeys, gesture.shape[1]/2, comparePath1, "experts", "red", gestureName)])
+                    _list.append([gestureName, self.plotTrajectory(_expertDemonstration, gesture, labelKeys, gesture.shape[1]/2, comparePath1, "experts", "red", gestureName)])
             df = pd.DataFrame(data  = (sorted(_list, key = self.sortSecond)), columns = ["gestures", "intersection"])
             df.to_csv("{}/{}{}.csv".format(comparePath,subject, kin))
 
-    def plotHistogram(self, trajectory, subject, labelKeys, subplots, segmentPath, performance, _color):
+    def plotHistogram(self, trajectory, subject, labelKeys, subplots, segmentPath, performance, _color, gestureName):
         manip = "left"
         plt.style.use('dark_background')
         subplotnum1 =int("{}1".format(subplots))
@@ -47,18 +47,18 @@ class mapVids:
                 ax = fig.add_subplot(plotNum)
                 ax.grid(axis='y', alpha=0.75)
                 ax.set_xlabel('Values', fontsize = 8)
-                ax.set_ylabel('Frequency of {}'.format(labelKeys[i%subplots]), fontsize = 8)
+                ax.set_ylabel('PDF {}'.format(labelKeys[i%subplots]), fontsize = 8)
 #                ax.set_title('Distribution for {} for {}'.format(labelKeys[i%subplots], manip), fontsize  =5)
                 ax.text(23, 45, r'$\mu=15, b=3$')
-                n, bins, patches = ax.hist(x=trajectory[:,i], bins=100, color=_color, alpha=0.7, rwidth=1.1, density = True)
-                n, bins, patches = ax.hist(x=subject[:,i], bins=100, color="white", alpha=0.7, rwidth=1.1, density = True)
-                hist_1, _ = np.histogram(trajectory[:,i], bins=100)
-                hist_2, _ = np.histogram(subject[:,i], bins=100)
-                intersections.append(self.findIntersection(hist_1, hist_2))
+                n, bins, patches = ax.hist(x=trajectory[:,i], bins=100, color=_color, alpha=0.7, rwidth=1.1, weights = np.ones_like(trajectory[:,i])/len(trajectory[:,i]))
+                n, bins, patches = ax.hist(x=subject[:,i], bins=100, color="white", alpha=0.7, rwidth=1.1, weights = np.ones_like(subject[:,i])/len(subject[:,i]))
+                hist_1, _ = np.histogram(trajectory[:,i], bins=100, density = True)
+                hist_2, _ = np.histogram(subject[:,i], bins=100, density = True)
+                intersections.append(self.findIntersection(hist_1, hist_2, bins))
             red_patch = mpatches.Patch(color = 'darkred', label = 'expert')
             blue_patch = mpatches.Patch(color = 'white', label = 'novice')
             plt.legend(handles= [red_patch, blue_patch])
-            plt.savefig("{}/{}.pdf".format(segmentPath, manip), dpi = 100, bbox = 'tight')                                  
+            plt.savefig("{}/{}{}.pdf".format(segmentPath, gestureName, manip), dpi = 100, bbox = 'tight')                                  
             plt.close()
         _meanIntersection = self.findMean(np.array(intersections).reshape(-1,subplots*2))
         return _meanIntersection
@@ -116,9 +116,8 @@ class mapVids:
                         os.makedirs(comparePath1)
                     _list.append([self.compareTrajectories(_expertDemonstrations, _subjectDemonstration), labelKeys])                
 
-    def plotTrajectory(self, experts, subject, labelKeys, subplots, segmentPath, performance, _color):
+    def plotTrajectory(self, experts, subject, labelKeys, subplots, segmentPath, performance, _color, gestureName):
         manip = "left"
-
         print ("loading expert trajectories") 
         subplotnum1 = int("{}1".format(subplots))
         for k in range(2):
@@ -139,7 +138,7 @@ class mapVids:
             red_patch = mpatches.Patch(color = 'red', label = 'expert')
             blue_patch = mpatches.Patch(color = 'green', label = 'novice')
             plt.legend(handles= [red_patch, blue_patch])
-            plt.savefig("{}/kin{}.pdf".format(segmentPath, manip), dpi = 100, bbox = 'tight')                                 
+            plt.savefig("{}/kin{}{}.pdf".format(segmentPath, manip,gestureName), dpi = 100, bbox = 'tight')                                 
         plt.close() 
         return
 
@@ -157,15 +156,19 @@ class mapVids:
     def getLabels(self, key):
          labels= {}
          labels['cartesian'] = ['x', 'y', 'z']
-         labels['rotation'] = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8', 'r9']
+         labels['rotation'] = ['roll', 'pitch', 'yaw']
          labels['linearVelocity'] = ["x'", "y'", "z'"]
          labels['angularVelocity'] = ["alpha","beta'","gamma'"]
          labels['grasperAngle'] = ["theta"]
          return labels[key]
 
-    def findIntersection(self, hist1, hist2):
-        minima = np.minimum(hist1, hist2)
-        intersection = np.true_divide(np.sum(minima), np.sum(hist2))
+    def findIntersection(self, hist1, hist2, bins):
+        bins  = np.diff(bins)
+        intersection = 0
+        for i in range(len(bins)):
+            intersection += min(bins[i]*hist1[i], bins[i]*hist2[i])
+#        minima = np.minimum(hist1, hist2)
+#        intersection = np.true_divide(np.sum(minima), np.sum(hist2))
         return intersection
     
     def findMean(self,_list):
@@ -198,9 +201,10 @@ class mapVids:
 
 _dir = os.path.abspath(os.path.dirname(sys.argv[0]))    
 mpvds = mapVids(_dir)
-#mpvds.loopSubjects()
+mpvds.loopSubjects()
 experts = ['Needle_Passing_F001', 'Needle_Passing_F004', 'Needle_Passing_H005', 'Needle_Passing_I005', 'Needle_Passing_H004']
 subjects = ['Needle_Passing_B001', 'Needle_Passing_B002', 'Needle_Passing_B003', 'Needle_Passing_B004', 'Needle_Passing_C001','Needle_Passing_C002', 'Needle_Passing_C003', 'Needle_Passing_C004', 'Needle_Passing_C005', 'Needle_Passing_D001','Needle_Passing_D002', 'Needle_Passing_D003', 'Needle_Passing_D004', 'Needle_Passing_D005', 'Needle_Passing_E001','Needle_Passing_E003', 'Needle_Passing_E004', 'Needle_Passing_E005', 'Needle_Passing_F001', 'Needle_Passing_F003','Needle_Passing_F004', 'Needle_Passing_H002', 'Needle_Passing_H004', 'Needle_Passing_H005', 'Needle_Passing_I002', 'Needle_Passing_I003','Needle_Passing_I004', 'Needle_Passing_I005' ]
+subjects = ['Needle_Passing_C004']
 
 for subject in subjects:
     mpvds.dtwTrajectories(experts, subject)    

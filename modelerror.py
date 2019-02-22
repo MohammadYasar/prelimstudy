@@ -11,7 +11,7 @@ from sklearn import externals
 class needlePassing:
     def __init__(self, dataPath):
         self.dataPath = dataPath
-#        self.loadDemonstrations("/kinematics")
+        #self.loadDemonstrations("/kinematics")
         self.plotAllInformation()
 
     def loadOffsets(self):
@@ -50,6 +50,9 @@ class needlePassing:
                 for key1, value in kinOffset.iteritems() :
 #                    print ("reading for {} with offset {} and span {}".format(key1, kinOffset[key1], kinSpan[key1]))
                     cartesians = self.readCartesians(name, kinOffset[key1], kinSpan[key1])                
+                    if key1 == 'rotation':
+                        print ("Find orientation")
+                        cartesians = self.orientation(cartesians)                        
                     transcriptFile = name.replace(key, "/transcriptions").replace("AllGestures", "")
                     transcript = self.readTranscripts(transcriptFile)                
                     segmentPath = (transcriptFile.replace("/transcriptions", "/segments").replace(".txt","/")) + str(key1)
@@ -253,7 +256,7 @@ class needlePassing:
         manip = "left"
         subplotnum1 =int("{}1".format(subplots))
         externals.joblib.dump(trajectory, "{}/{}.p".format(segmentPath, performance))
-        for k in range(2):
+        for k in range(1,2):
             if k>0:
                 manip = "right"
             for i in range(0+k*subplots,(k+1)*subplots):
@@ -264,12 +267,13 @@ class needlePassing:
                     for j in range(len(traj)):
                         flattened_array.append(traj[j][i])
                 flattened_array = np.array(flattened_array).reshape(-1,1)
-                n, bins, patches = ax.hist(x=flattened_array, bins=100, color=_color, alpha=0.7, rwidth=1.1, density = True)
+                n, bins, patches = ax.hist(x=flattened_array, bins=100, color=_color, alpha=0.7, rwidth=1.1, weights=np.ones_like(flattened_array) / len(flattened_array))
+                print ("checking density {}".format(np.sum(n)))
                 ax.grid(axis='y', alpha=0.75)
                 ax.set_xlabel('Values', fontsize = 8)
                 ax.set_ylabel('Frequency', fontsize = 8)
                 ax.set_title('Distribution for {}'.format(labelKeys[i%subplots]), fontsize  =8)
-                ax.text(23, 45, r'$\mu=15, b=3$')
+#                ax.text(23, 45, r'$\mu=15, b=3$')
                 maxfreq = n.max()
             red_patch = mpatches.Patch(color = 'darkred', label = 'expert')
             plt.savefig("{}/{}.pdf".format(segmentPath, manip), dpi = 100)
@@ -343,6 +347,9 @@ class needlePassing:
         """
         kinDict = {}        
         constraintDict = {}
+        print ("key {}".format(key))
+        if (key == 'rotation'):
+            span = 3
 #        print (scores)
         for seg in uniqueSegments:
             kinDict[seg] = []
@@ -390,5 +397,17 @@ class needlePassing:
             os.makedirs(constraintsPath)
         externals.joblib.dump(constraintsDict, "{}{}.p".format(constraintsPath, key))
 
+    def orientation(self,rotationMatrix):
+        print ("size of the rotationMatrix {}".format(rotationMatrix.shape))
+        _ori = np.zeros((len(rotationMatrix),6))
+        for i in range(_ori.shape[0]):
+            for j in range(_ori.shape[1]):
+                _ori[i][0] = math.atan2(rotationMatrix[i][7], rotationMatrix[i][8])
+                _ori[i][1] = math.atan2(-rotationMatrix[i][6], (rotationMatrix[i][8]**2 +rotationMatrix[i][7]**2)**0.5)
+                _ori[i][2] = math.atan2(rotationMatrix[i][3], rotationMatrix[i][0])
+                _ori[i][3] = math.atan2(rotationMatrix[i][16], rotationMatrix[i][17])
+                _ori[i][4] = math.atan2(-rotationMatrix[i][15],(rotationMatrix[i][17]**2 + rotationMatrix[i][16]**2)**0.5)
+                _ori[i][5] = math.atan2(rotationMatrix[i][12], rotationMatrix[i][9])
+        return _ori
 path = os.path.abspath(os.path.dirname(sys.argv[0]))
 npds = needlePassing(path)

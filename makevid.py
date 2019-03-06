@@ -19,8 +19,8 @@ class makeVideo:
     def clipVideo(self, clipName, start, end):
         myclip = mpy.VideoFileClip(clipName)
         print (myclip.fps) # prints for instance '30'
-        myclip2 = myclip.subclip(start, end)
-        myclip2.write_videofile(clipName.replace(".avi", "clipped.avi"), codec='mpeg4')
+        myclip2 = myclip.subclip(start-10, end+10)
+        myclip2.write_videofile(clipName.replace(".avi", "clipped.mp4"), codec='mpeg4')
         #myclip2.write_videofile(clipName.replace(".avi", "clipped.avi"))
 
     def iterateoverFailures(self, _dir):

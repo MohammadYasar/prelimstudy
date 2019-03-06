@@ -1,4 +1,4 @@
-import os, sys, glob
+import os, sys, glob, math
 import numpy as np
 import pandas as pd
 from sklearn import externals
@@ -85,6 +85,8 @@ class mapVids:
                     _subjectDemonstration = externals.joblib.load(subjectGesturePath)
                     labelKeys = self.getLabels(kin)
                     _list.append([ gestureName, self.compareTrajectories(_expertDemonstrations, _subjectDemonstration)])                
+                if kin == "cartesian":
+                    self.plotmultivariateDistributions(_expertDemonstrations,_subjectDemonstration, subject, gestureName)
             #print (sorted(_list, key = self.sortSecond)) 
             df = pd.DataFrame(data  = (sorted(_list, key = self.sortSecond)), columns = ["gestures", "intersection"])
             df.to_csv("{}/{}{}dtw.csv".format(comparePath,subject, kin))
@@ -197,14 +199,110 @@ class mapVids:
             distance, path = fastdtw(expertTraj, subjectTraj)
             dev.append(distance)
         #print dev
-        return sum(dev)/float(len(dev))
+        return min(dev)/float(len(subjectTraj))
 
+    def plotmultivariateDistributions(self, experts, subject, subjectName, gestureName):
+        print ("Subject shape expert shaper {}  {}".format(subject.shape, len(experts)))        
+        comparePath = self._dir + "/figures/comparision/" + subjectName
+        figLeft = plt.figure()
+        figRight = plt.figure()
+        for expert in experts:
+            r, phi, theta = self.multivariateDistributions(expert)
+            plotNum = 311
+            ax = figLeft.add_subplot(plotNum)
+            ax.set_xlabel('Time', fontsize = 8)
+            ax.set_ylabel('Euclidean', fontsize = 8)
+            ax.plot(r[:,0], color = 'red')
+            plotNum = 312
+            ax = figLeft.add_subplot(plotNum)
+            ax.set_xlabel('Time', fontsize = 8)
+            ax.set_ylabel('Phi', fontsize = 8)
+            ax.plot(phi[:,0], color = 'red')
+            plotNum = 313
+            ax = figLeft.add_subplot(plotNum)
+            ax.set_xlabel('Time', fontsize = 8)
+            ax.set_ylabel('Theta', fontsize = 8)
+            ax.plot(theta[:,0], color = 'red')
+
+            plotNum = 311
+            ax = figRight.add_subplot(plotNum)
+            ax.set_xlabel('Time', fontsize = 8)
+            ax.set_ylabel('Euclidean', fontsize = 8)
+            ax.plot(r[:,1], color = 'red')
+            plotNum = 312
+            ax = figRight.add_subplot(plotNum)
+            ax.set_xlabel('Time', fontsize = 8)
+            ax.set_ylabel('Phi', fontsize = 8)
+            ax.plot(phi[:,1], color = 'red')
+            plotNum = 313
+            ax = figRight.add_subplot(plotNum)
+            ax.set_xlabel('Time', fontsize = 8)
+            ax.set_ylabel('Theta', fontsize = 8)
+            ax.plot(theta[:,1], color = 'red')
+        
+        for sub in subject:
+            r, phi, theta = self.multivariateDistributions(subject)
+            plotNum = 311
+            ax = figLeft.add_subplot(plotNum)
+            ax.set_xlabel('Time', fontsize = 8)
+            ax.set_ylabel('Euclidean', fontsize = 8)
+            ax.plot(r[:,0], color = 'green')
+            plotNum = 312
+            ax = figLeft.add_subplot(plotNum)
+            ax.set_xlabel('Time', fontsize = 8)
+            ax.set_ylabel('Phi', fontsize = 8)
+            ax.plot(phi[:,0], color = 'green')
+            plotNum = 313
+            ax = figLeft.add_subplot(plotNum)
+            ax.set_xlabel('Time', fontsize = 8)
+            ax.set_ylabel('Theta', fontsize = 8)
+            ax.plot(theta[:,0], color = 'green')
+
+            plotNum = 311
+            ax = figRight.add_subplot(plotNum)
+            ax.set_xlabel('Time', fontsize = 8)
+            ax.set_ylabel('Euclidean', fontsize = 8)
+            ax.plot(r[:,1], color = 'green')
+            plotNum = 312
+            ax = figRight.add_subplot(plotNum)
+            ax.set_xlabel('Time', fontsize = 8)
+            ax.set_ylabel('Phi', fontsize = 8)
+            ax.plot(phi[:,1], color = 'green')
+            plotNum = 313
+            ax = figRight.add_subplot(plotNum)
+            ax.set_xlabel('Time', fontsize = 8)
+            ax.set_ylabel('Theta', fontsize = 8)
+            ax.plot(theta[:,1], color = 'green')
+        print ("comparePath {}".format(comparePath))
+        figLeft.savefig("{}/multivar/multivarLeft{}.pdf".format(comparePath, gestureName), dpi = 100, bbox = 'tight')                                 
+        figRight.savefig("{}/multivar/multivarRight{}.pdf".format(comparePath, gestureName), dpi = 100, bbox = 'tight')                                 
+        plt.close() 
+
+    def multivariateDistributions(self, cartesians):
+        """
+        This function takes converts the x-y-z values to polar co-ordinates
+        """
+        #print ("size of cartesians {}".format(cartesians.shape))
+        r = np.zeros((cartesians.shape[0],2))    
+        phi = np.zeros((cartesians.shape[0],2))
+        theta = phi.copy()    
+        r[:,0] = cartesians[:,0]**2 +cartesians[:,1]**2 + cartesians[:,2]**2
+        r[:,0] = np.array(r[:,0]**0.5)
+        r[:,1] = cartesians[:,3]**2 +cartesians[:,4]**2 + cartesians[:,5]**2
+        r[:,1] = np.array(r[:,1]**0.5)
+        for i in range(phi.shape[0]):
+            phi[i,0] = math.atan2(cartesians[i,1],cartesians[i,0])
+            theta[i,0] = math.acos(cartesians[i,2]/r[i,0])
+            phi[i,1] = math.atan2(cartesians[i,4],cartesians[i,3])
+            theta[i,1] = math.acos(cartesians[i,5]/r[i,1])
+        return r, phi, theta 
 _dir = os.path.abspath(os.path.dirname(sys.argv[0]))    
 mpvds = mapVids(_dir)
-mpvds.loopSubjects()
+#mpvds.loopSubjects()
 experts = ['Needle_Passing_F001', 'Needle_Passing_F004', 'Needle_Passing_H005', 'Needle_Passing_I005', 'Needle_Passing_H004']
-subjects = ['Needle_Passing_B001', 'Needle_Passing_B002', 'Needle_Passing_B003', 'Needle_Passing_B004', 'Needle_Passing_C001','Needle_Passing_C002', 'Needle_Passing_C003', 'Needle_Passing_C004', 'Needle_Passing_C005', 'Needle_Passing_D001','Needle_Passing_D002', 'Needle_Passing_D003', 'Needle_Passing_D004', 'Needle_Passing_D005', 'Needle_Passing_E001','Needle_Passing_E003', 'Needle_Passing_E004', 'Needle_Passing_E005', 'Needle_Passing_F001', 'Needle_Passing_F003','Needle_Passing_F004', 'Needle_Passing_H002', 'Needle_Passing_H004', 'Needle_Passing_H005', 'Needle_Passing_I002', 'Needle_Passing_I003','Needle_Passing_I004', 'Needle_Passing_I005' ]
-subjects = ['Needle_Passing_C004']
+subjects = ['Needle_Passing_B001']
+#, 'Needle_Passing_B002', 'Needle_Passing_B003', 'Needle_Passing_B004', 'Needle_Passing_C001','Needle_Passing_C002', 'Needle_Passing_C003', 'Needle_Passing_C004', 'Needle_Passing_C005', 'Needle_Passing_D001','Needle_Passing_D002', 'Needle_Passing_D003', 'Needle_Passing_D004', 'Needle_Passing_D005', 'Needle_Passing_E001','Needle_Passing_E003', 'Needle_Passing_E004', 'Needle_Passing_E005', 'Needle_Passing_F001', 'Needle_Passing_F003','Needle_Passing_F004', 'Needle_Passing_H002', 'Needle_Passing_H004', 'Needle_Passing_H005', 'Needle_Passing_I002', 'Needle_Passing_I003','Needle_Passing_I004', 'Needle_Passing_I005' ]
+#subjects = ['Needle_Passing_C004']
 
 for subject in subjects:
     mpvds.dtwTrajectories(experts, subject)    

@@ -16,7 +16,7 @@ class needlePassing:
     def __init__(self, dataPath):
         np.seterr(divide='ignore', invalid='ignore')
         self.dataPath = dataPath
-        self.plotmultivariateDistributions("rotation")
+        self.plotmultivariateDistributions("cartesian")# use either "cartesian" or "rotation" for input to the function
 
     def loadOffsets(self):
         dfLength = 78
@@ -36,7 +36,7 @@ class needlePassing:
 
     def plotmultivariateDistributions(self, key1):
         """
-        This function plots plots the KL-divergence for cartesian or orientation
+        This function plots plots the KL-divergence for cartesian or orientation, by loading the annotated segment-wise trajectories
         """
         kinOffset, kinSpan = self.loadOffsets()
         errorFile = self.dataPath + "/segments/errorcsvs/{}*.csv".format(key1)
@@ -75,7 +75,7 @@ class needlePassing:
             for i in range(optimal_cart.shape[1]):
                 _minlist.append(min(min(optimal_cart[:,i]),min(suboptimal_cart[:,i])))
                 _maxlist.append(max(max(optimal_cart[:,i]),max(suboptimal_cart[:,i])))
-            #print (_maxlist)
+
             for count in range(len(dists)):
                 k = 0
                 manip = "left"
@@ -97,7 +97,7 @@ class needlePassing:
             kl_dict[_gesture]= []
             aggregate_dict[_gesture] = 0.0
             for j1 in range (0,len(hist_list)/2):
-                kl_dict[_gesture].append(ss.entropy(hist_list[j1], hist_list[j1+len(hist_list)/2])) # compares the first with the 4th, 2nd with 5th and so on
+                kl_dict[_gesture].append(ss.entropy(hist_list[j1], hist_list[j1+len(hist_list)/2])) # compares the first with the 6th, 2nd with 7th and so on
             aggregate_dict[_gesture] = sum(kl_dict[_gesture])/len(kl_dict[_gesture])
         externals.joblib.dump(aggregate_dict, 'aggregate_dict.p')
         aggregate_dict = externals.joblib.load('aggregate_dict.p')

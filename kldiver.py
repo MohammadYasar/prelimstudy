@@ -16,7 +16,7 @@ class needlePassing:
     def __init__(self, dataPath):
         np.seterr(divide='ignore', invalid='ignore')
         self.dataPath = dataPath
-        self.plotmultivariateDistributions("cartesian")# use either "cartesian" or "rotation" for input to the function
+        self.plotmultivariateDistributions("cartesian", "rotation")# use either "cartesian" or "rotation" for input to the function
 
     def loadOffsets(self):
         dfLength = 78
@@ -34,73 +34,51 @@ class needlePassing:
         kinSpan['grasperAngle'] = 1
         return kinOffset, kinSpan
 
-    def plotmultivariateDistributions(self, key1):
+    def plotmultivariateDistributions(self, key1, key2):
         """
         This function plots plots the KL-divergence for cartesian or orientation, by loading the annotated segment-wise trajectories
+        The hierarchy of interation is firstly gesture, then optimal_distribution, then suboptimal_distribution
         """
         kinOffset, kinSpan = self.loadOffsets()
-        errorFile = self.dataPath + "/segments/errorcsvs/{}*.csv".format(key1)
+        cartFile = self.dataPath + "/segments/errorcsvs/{}*.csv".format(key1)
+        oriFile = self.dataPath + "/segments/errorcsvs/{}*.csv".format(key2)
         kl_dict = {}
         aggregate_dict= {}
-        for name in glob.glob(errorFile):
+        for name in glob.glob(cartFile):
             _gesture = name.split("/")[len(name.split("/"))-1]
-            cartesians = np.asarray(pd.read_csv(name))
-            if key1 == "rotation":
-                orientation = self.orientation(cartesians[:,1:cartesians.shape[1]-1])
-            else:
-                print ("non-rotation")
-                orientation = (cartesians[:,1:cartesians.shape[1]-1])
-            print (_gesture)
-            suboptimal_cart = []
-            optimal_cart = []
-            for i in range(cartesians.shape[0]):
-                if cartesians[i][cartesians.shape[1]-1] == 1:
-                    suboptimal_cart.append(orientation[i])
-                else:
-                    optimal_cart.append(orientation[i])
-            suboptimal_cart =  (np.asarray(suboptimal_cart))
-            hist_list = []
-            optimal_cart = (np.asarray(optimal_cart))
+            jointdis, labels = self.extractjointdistribution(name, key1, key2)
+            suboptimal_cart, optimal_cart = self.sortDistribution(jointdis, labels)
             labelKeys = self.getLabels(key1)
-            manip = "left"
-            subplots = 3
-            subplotnum1 =int("{}1".format(subplots))
-            _color = ['red', 'white']
             dists = [optimal_cart, suboptimal_cart]
-            histList = []
-            _maxlist = []
-            _minlist = []
-            print (suboptimal_cart.shape)
-
-            for i in range(optimal_cart.shape[1]):
-                _minlist.append(min(min(optimal_cart[:,i]),min(suboptimal_cart[:,i])))
-                _maxlist.append(max(max(optimal_cart[:,i]),max(suboptimal_cart[:,i])))
-
+            print (_gesture)
+            hist_list = []
+            _range = self.histlimits(optimal_cart, suboptimal_cart)
+            print (len(_range))
             for count in range(len(dists)):
                 k = 0
                 manip = "left"
                 for k in range(0,2):
                     if k>0:
                         manip = "right"
-                    flattened_array = dists[count][:,k*3+0:k*3+3]
-                    num = 100
-                    H, edges = np.histogramdd(flattened_array, bins = (num, num, num), range= [[_minlist[k*3+0], _maxlist[k*3+0]], [_minlist[k*3+1],_maxlist[k*3+1]], [_minlist[k*3+2],_maxlist[k*3+2]]])
+                    flattened_array = dists[count][:,k*jointdis.shape[1]/2:(k+1)*jointdis.shape[1]/2]
+                    print (flattened_array.shape)
+                    num = 10
+                    H, edges = np.histogramdd(flattened_array, bins = (num), range= _range[k*jointdis.shape[1]/2:(k+1)*jointdis.shape[1]/2])
                     #self.surfacePlots(dists[count][:,k*3+0],dists[count][:,k*3+1],dists[count][:,k*3+2], H, edges)
                     hist_list.append(H)
+
             for j1 in range(len(hist_list)):
                 for val in (hist_list[j1]):
                     zero_indices = np.transpose(np.nonzero(val==0))
                     for index in zero_indices:
-                        val[index[0]][index[1]] = 0.00000000000001
-                #print (hist_list[j1])
+                        val[index[0]][index[1]][index[2]][index[3]][index[4]] = 0.00000000000001
 
             kl_dict[_gesture]= []
             aggregate_dict[_gesture] = 0.0
             for j1 in range (0,len(hist_list)/2):
                 kl_dict[_gesture].append(ss.entropy(hist_list[j1], hist_list[j1+len(hist_list)/2])) # compares the first with the 6th, 2nd with 7th and so on
             aggregate_dict[_gesture] = sum(kl_dict[_gesture])/len(kl_dict[_gesture])
-        externals.joblib.dump(aggregate_dict, 'aggregate_dict.p')
-        aggregate_dict = externals.joblib.load('aggregate_dict.p')
+        
         lists = sorted(aggregate_dict.items()) # sorted by key, return a list of tuples
         x, y = zip(*lists) # unpack a list of pairs into two tuples
         x = list(x)
@@ -115,6 +93,47 @@ class needlePassing:
         plt.xlabel("Gesture Index", fontsize=30)
         plt.ylabel("Entropy", fontsize=30)
         plt.show()
+
+    def extractjointdistribution(self, name, key1, key2):
+        """
+        reads the cartesians and orientation values from pdf, and concatenates them in the format: left_cartesians, left_orientation, right_cartesian, right_orientation
+        """
+        cartesians = np.asarray(pd.read_csv(name))
+        orientation = np.asarray(pd.read_csv(name.replace(key1, key2)))
+        labels = cartesians[:,cartesians.shape[1]-1]
+
+        orientation = self.orientation(orientation[:,1:orientation.shape[1]-1])
+        cartesians = (cartesians[:,1:cartesians.shape[1]-1])
+
+        leftjointdis = np.concatenate((cartesians[:,0:cartesians.shape[1]/2], orientation[:,0:orientation.shape[1]/2]), axis=1)
+        rightjointdis = np.concatenate((cartesians[:,cartesians.shape[1]/2:cartesians.shape[1]], orientation[:,orientation.shape[1]/2:orientation.shape[1]]), axis=1)
+        jointdis = np.concatenate((leftjointdis, rightjointdis), axis=1)
+        return jointdis, labels
+
+    def sortDistribution(self, jointdis,labels):
+        suboptimal_cart = []
+        optimal_cart = []
+
+        for i in range(labels.shape[0]):
+            if labels[i] == 1:
+                suboptimal_cart.append(jointdis[i])
+            else:
+                optimal_cart.append(jointdis[i])
+        suboptimal_cart =  (np.asarray(suboptimal_cart))
+        optimal_cart =  (np.asarray(optimal_cart))
+
+        return suboptimal_cart, optimal_cart
+
+    def histlimits(self, suboptimal_cart, optimal_cart):
+        _maxlist = []
+        _minlist = []
+        for i in range(optimal_cart.shape[1]):
+            _minlist.append(min(min(optimal_cart[:,i]),min(suboptimal_cart[:,i])))
+            _maxlist.append(max(max(optimal_cart[:,i]),max(suboptimal_cart[:,i])))
+        _range = []
+        for i in range(optimal_cart.shape[1]):
+            _range.append([_minlist[i],_maxlist[i]])
+        return _range
 
     def surfacePlots(self, X, Y, Z, hist, edges):
         fig = plt.figure()
@@ -139,7 +158,6 @@ class needlePassing:
 
 
     def orientation(self,rotationMatrix):
-        #print ("size of the rotationMatrix {}".format(rotationMatrix.shape))
         _ori = np.zeros((len(rotationMatrix),6))
         for i in range(_ori.shape[0]):
             for j in range(_ori.shape[1]):

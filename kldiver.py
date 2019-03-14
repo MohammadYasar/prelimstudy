@@ -44,6 +44,7 @@ class needlePassing:
         oriFile = self.dataPath + "/segments/errorcsvs/{}*.csv".format(key2)
         kl_dict = {}
         aggregate_dict= {}
+
         for name in glob.glob(cartFile):
             _gesture = name.split("/")[len(name.split("/"))-1]
             jointdis, labels = self.extractjointdistribution(name, key1, key2)
@@ -78,21 +79,9 @@ class needlePassing:
             for j1 in range (0,len(hist_list)/2):
                 kl_dict[_gesture].append(ss.entropy(hist_list[j1], hist_list[j1+len(hist_list)/2])) # compares the first with the 6th, 2nd with 7th and so on
             aggregate_dict[_gesture] = sum(kl_dict[_gesture])/len(kl_dict[_gesture])
-        
-        lists = sorted(aggregate_dict.items()) # sorted by key, return a list of tuples
-        x, y = zip(*lists) # unpack a list of pairs into two tuples
-        x = list(x)
-        for i in range(len(x)):
-            x[i] = x[i].replace(key1+"s", "").replace(".p","").replace('.csv','')
-        sum_y = np.zeros(len(x))
-        for i in range(len(y)):
-            sum_y[i] = np.sum(y[i])
-        plt.plot(x, sum_y)
-        plt.xticks(fontsize=15)
-        plt.yticks(fontsize=25)
-        plt.xlabel("Gesture Index", fontsize=30)
-        plt.ylabel("Entropy", fontsize=30)
-        plt.show()
+            
+        self.plotKL(aggregate_dict, key1, key2)
+
 
     def extractjointdistribution(self, name, key1, key2):
         """
@@ -135,6 +124,22 @@ class needlePassing:
             _range.append([_minlist[i],_maxlist[i]])
         return _range
 
+    def plotKL(self, aggregate_dict, key1, key2):
+        lists = sorted(aggregate_dict.items()) # sorted by key, return a list of tuples
+        x, y = zip(*lists) # unpack a list of pairs into two tuples
+        x = list(x)
+        for i in range(len(x)):
+            x[i] = x[i].replace(key1+"s", "").replace(".p","").replace('.csv','')
+        sum_y = np.zeros(len(x))
+        for i in range(len(y)):
+            sum_y[i] = np.sum(y[i])
+        plt.plot(x, sum_y)
+        plt.xticks(fontsize=15)
+        plt.yticks(fontsize=25)
+        plt.xlabel("Gesture Index", fontsize=30)
+        plt.ylabel("Entropy", fontsize=30)
+        plt.show()
+
     def surfacePlots(self, X, Y, Z, hist, edges):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -146,7 +151,6 @@ class needlePassing:
         plt.colorbar(cs)
         plt.show()
 
-
     def getLabels(self, key):
         labels= {}
         labels['cartesian'] = ['x', 'y', 'z']
@@ -155,7 +159,6 @@ class needlePassing:
         labels['angularVelocity'] = ["alpha","beta'","gamma'"]
         labels['grasperAngle'] = ["theta"]
         return labels[key]
-
 
     def orientation(self,rotationMatrix):
         _ori = np.zeros((len(rotationMatrix),6))
